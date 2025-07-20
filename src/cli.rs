@@ -81,6 +81,9 @@ pub struct Cli {
     /// List all macros
     #[clap(long)]
     pub list_macros: bool,
+    /// Start the interactive learning app with GUI
+    #[clap(long)]
+    pub learn: bool,
     /// Input text
     #[clap(trailing_var_arg = true)]
     text: Vec<String>,

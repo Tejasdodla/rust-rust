@@ -2,6 +2,7 @@ mod cli;
 mod client;
 mod config;
 mod function;
+mod learning;
 mod rag;
 mod render;
 mod repl;
@@ -40,6 +41,8 @@ async fn main() -> Result<()> {
     let text = cli.text()?;
     let working_mode = if cli.serve.is_some() {
         WorkingMode::Serve
+    } else if cli.learn {
+        WorkingMode::Repl // Treat learning mode as interactive
     } else if text.is_none() && cli.file.is_empty() {
         WorkingMode::Repl
     } else {
@@ -161,6 +164,12 @@ async fn run(config: GlobalConfig, cli: Cli, text: Option<String>) -> Result<()>
     }
     if let Some(addr) = cli.serve {
         return serve::run(config, addr).await;
+    }
+    
+    if cli.learn {
+        println!("🦀 Starting Rust Learning App...");
+        println!("📚 Open your browser to http://localhost:8000/learn");
+        return serve::run(config, Some("127.0.0.1:8000".to_string())).await;
     }
     let is_repl = config.read().working_mode.is_repl();
     if cli.rebuild_rag {

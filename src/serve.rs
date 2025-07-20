@@ -1,4 +1,4 @@
-use crate::{client::*, config::*, function::*, rag::*, utils::*};
+use crate::{client::*, config::*, function::*, learning::*, rag::*, utils::*};
 
 use anyhow::{anyhow, bail, Result};
 use bytes::Bytes;
@@ -69,6 +69,9 @@ struct Server {
     models: Vec<Value>,
     roles: Vec<Role>,
     rags: Vec<String>,
+    lesson_manager: LessonManager,
+    quiz_manager: QuizManager,
+    code_executor: RustCodeExecutor,
 }
 
 impl Server {
@@ -98,11 +101,27 @@ impl Server {
                 value
             })
             .collect();
+        
+        // Initialize learning components
+        let lesson_manager = LessonManager::new(config.clone().into()).unwrap_or_else(|_| {
+            println!("Warning: Failed to initialize lesson manager");
+            // Create a minimal lesson manager as fallback
+            LessonManager::new(Arc::new(RwLock::new(config.clone()))).unwrap()
+        });
+        let quiz_manager = QuizManager::new();
+        let code_executor = RustCodeExecutor::new().unwrap_or_else(|_| {
+            println!("Warning: Failed to initialize code executor");
+            RustCodeExecutor::default()
+        });
+        
         Self {
             config,
             models,
             roles: Config::all_roles(),
             rags: Config::list_rags(),
+            lesson_manager,
+            quiz_manager,
+            code_executor,
         }
     }
 
@@ -169,6 +188,20 @@ impl Server {
             self.list_rags()
         } else if path == "/v1/rags/search" {
             self.search_rag(req).await
+        } else if path == "/learn" || path == "/learn.html" {
+            self.learning_page()
+        } else if path == "/api/lessons" {
+            self.list_lessons()
+        } else if path.starts_with("/api/lesson/") {
+            let lesson_id = path.strip_prefix("/api/lesson/").unwrap();
+            self.get_lesson(lesson_id)
+        } else if path == "/api/quizzes" {
+            self.list_quizzes()
+        } else if path.starts_with("/api/quiz/") {
+            let quiz_id = path.strip_prefix("/api/quiz/").unwrap();
+            self.get_quiz(quiz_id)
+        } else if path == "/api/execute" {
+            self.execute_code(req).await
         } else if path == "/playground" || path == "/playground.html" {
             self.playground_page()
         } else if path == "/arena" || path == "/arena.html" {
@@ -572,6 +605,86 @@ impl Server {
         let res = Response::builder()
             .header("Content-Type", "application/json")
             .body(Full::new(Bytes::from(output.to_string())).boxed())?;
+        Ok(res)
+    }
+
+    // Learning API endpoints
+    fn learning_page(&self) -> Result<AppResponse> {
+        let html = include_str!("../assets/learning.html");
+        let res = Response::builder()
+            .header("Content-Type", "text/html; charset=utf-8")
+            .body(Full::new(Bytes::from(html)).boxed())?;
+        Ok(res)
+    }
+
+    fn list_lessons(&self) -> Result<AppResponse> {
+        let lessons = self.lesson_manager.list_lessons();
+        let data = json!({ "data": lessons });
+        let res = Response::builder()
+            .header("Content-Type", "application/json; charset=utf-8")
+            .body(Full::new(Bytes::from(data.to_string())).boxed())?;
+        Ok(res)
+    }
+
+    fn get_lesson(&self, lesson_id: &str) -> Result<AppResponse> {
+        if let Some(lesson) = self.lesson_manager.get_lesson(lesson_id) {
+            let html = self.lesson_manager.render_lesson_html(lesson);
+            let data = json!({ 
+                "lesson": lesson,
+                "html": html
+            });
+            let res = Response::builder()
+                .header("Content-Type", "application/json; charset=utf-8")
+                .body(Full::new(Bytes::from(data.to_string())).boxed())?;
+            Ok(res)
+        } else {
+            Err(anyhow!("Lesson not found"))
+        }
+    }
+
+    fn list_quizzes(&self) -> Result<AppResponse> {
+        let quizzes = self.quiz_manager.list_quizzes();
+        let data = json!({ "data": quizzes });
+        let res = Response::builder()
+            .header("Content-Type", "application/json; charset=utf-8")
+            .body(Full::new(Bytes::from(data.to_string())).boxed())?;
+        Ok(res)
+    }
+
+    fn get_quiz(&self, quiz_id: &str) -> Result<AppResponse> {
+        if let Some(quiz) = self.quiz_manager.get_quiz(quiz_id) {
+            let data = json!({ "quiz": quiz });
+            let res = Response::builder()
+                .header("Content-Type", "application/json; charset=utf-8")
+                .body(Full::new(Bytes::from(data.to_string())).boxed())?;
+            Ok(res)
+        } else {
+            Err(anyhow!("Quiz not found"))
+        }
+    }
+
+    async fn execute_code(&self, req: hyper::Request<Incoming>) -> Result<AppResponse> {
+        let req_body = req.collect().await?.to_bytes();
+        let req_body: Value = serde_json::from_slice(&req_body)
+            .map_err(|err| anyhow!("Invalid request json, {err}"))?;
+
+        debug!("execute code request: {req_body}");
+        
+        let code = req_body["code"].as_str()
+            .ok_or_else(|| anyhow!("Missing 'code' field"))?;
+
+        // Safety check
+        if !is_safe_code(code) {
+            return Err(anyhow!("Code contains potentially unsafe operations"));
+        }
+
+        let result = self.code_executor.execute_code(code).await
+            .map_err(|e| anyhow!("Execution failed: {}", e))?;
+
+        let data = json!({ "result": result });
+        let res = Response::builder()
+            .header("Content-Type", "application/json; charset=utf-8")
+            .body(Full::new(Bytes::from(data.to_string())).boxed())?;
         Ok(res)
     }
 }
