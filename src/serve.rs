@@ -103,10 +103,11 @@ impl Server {
             .collect();
         
         // Initialize learning components
-        let lesson_manager = LessonManager::new(config.clone().into()).unwrap_or_else(|_| {
-            println!("Warning: Failed to initialize lesson manager");
-            // Create a minimal lesson manager as fallback
-            LessonManager::new(Arc::new(RwLock::new(config.clone()))).unwrap()
+        let global_config = Arc::new(RwLock::new(config.clone()));
+        let lesson_manager = LessonManager::new(global_config.clone()).unwrap_or_else(|e| {
+            println!("Warning: Failed to initialize lesson manager: {}", e);
+            // Create a minimal lesson manager as fallback - we'll handle this error differently
+            panic!("Could not initialize lesson manager")
         });
         let quiz_manager = QuizManager::new();
         let code_executor = RustCodeExecutor::new().unwrap_or_else(|_| {
@@ -202,6 +203,8 @@ impl Server {
             self.get_quiz(quiz_id)
         } else if path == "/api/execute" {
             self.execute_code(req).await
+        } else if path == "/api/search-rust-docs" {
+            self.search_rust_docs(req).await
         } else if path == "/playground" || path == "/playground.html" {
             self.playground_page()
         } else if path == "/arena" || path == "/arena.html" {
@@ -610,10 +613,10 @@ impl Server {
 
     // Learning API endpoints
     fn learning_page(&self) -> Result<AppResponse> {
-        let html = include_str!("../assets/learning.html");
+        let html = include_bytes!("../assets/learning.html");
         let res = Response::builder()
             .header("Content-Type", "text/html; charset=utf-8")
-            .body(Full::new(Bytes::from(html)).boxed())?;
+            .body(Full::new(Bytes::from(html.as_ref())).boxed())?;
         Ok(res)
     }
 
@@ -680,6 +683,28 @@ impl Server {
 
         let result = self.code_executor.execute_code(code).await
             .map_err(|e| anyhow!("Execution failed: {}", e))?;
+
+        let data = json!({ "result": result });
+        let res = Response::builder()
+            .header("Content-Type", "application/json; charset=utf-8")
+            .body(Full::new(Bytes::from(data.to_string())).boxed())?;
+        Ok(res)
+    }
+
+    async fn search_rust_docs(&self, req: hyper::Request<Incoming>) -> Result<AppResponse> {
+        let req_body = req.collect().await?.to_bytes();
+        let req_body: Value = serde_json::from_slice(&req_body)
+            .map_err(|err| anyhow!("Invalid request json, {err}"))?;
+
+        debug!("search rust docs request: {req_body}");
+        
+        let query = req_body["query"].as_str()
+            .ok_or_else(|| anyhow!("Missing 'query' field"))?;
+
+        let config = Arc::new(RwLock::new(self.config.clone()));
+        
+        let result = search_rust_docs(&config, query).await
+            .unwrap_or_else(|e| format!("Search failed: {}. Try running --setup-rust-docs first.", e));
 
         let data = json!({ "result": result });
         let res = Response::builder()

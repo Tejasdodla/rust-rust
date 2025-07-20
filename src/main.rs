@@ -21,6 +21,7 @@ use crate::config::{
     ensure_parent_exists, list_agents, load_env_file, macro_execute, Config, GlobalConfig, Input,
     WorkingMode, CODE_ROLE, EXPLAIN_SHELL_ROLE, SHELL_ROLE, TEMP_SESSION_NAME,
 };
+use crate::learning::{test_learning_components, setup_rust_docs_rag};
 use crate::render::render_error;
 use crate::repl::Repl;
 use crate::utils::*;
@@ -164,6 +165,23 @@ async fn run(config: GlobalConfig, cli: Cli, text: Option<String>) -> Result<()>
     }
     if let Some(addr) = cli.serve {
         return serve::run(config, addr).await;
+    }
+    
+    if cli.test_learning {
+        if let Err(err) = test_learning_components() {
+            eprintln!("❌ Learning components test failed: {}", err);
+            std::process::exit(1);
+        }
+        return Ok(());
+    }
+    
+    if cli.setup_rust_docs {
+        println!("🦀 Setting up Rust documentation RAG...");
+        if let Err(err) = setup_rust_docs_rag(&config).await {
+            eprintln!("❌ Failed to setup Rust docs RAG: {}", err);
+            std::process::exit(1);
+        }
+        return Ok(());
     }
     
     if cli.learn {

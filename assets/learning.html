@@ -269,6 +269,13 @@
                     <h3>❓ Quizzes</h3>
                     <div id="quizzes-list" class="loading">Loading quizzes...</div>
                 </div>
+
+                <div class="nav-section">
+                    <h3>📖 Rust Docs Search</h3>
+                    <input type="text" id="docs-search" placeholder="Search Rust docs..." 
+                           style="width: 100%; padding: 8px; border: 1px solid #e2e8f0; border-radius: 4px; margin-bottom: 10px;">
+                    <button class="btn" onclick="searchRustDocs()" style="width: 100%; padding: 8px;">🔍 Search</button>
+                </div>
             </div>
 
             <div class="content">
@@ -509,6 +516,63 @@
             const percentage = Math.round((score / total) * 100);
             alert(`Quiz completed! Score: ${score}/${total} (${percentage}%)`);
         }
+
+        async function searchRustDocs() {
+            const query = document.getElementById('docs-search').value.trim();
+            if (!query) {
+                alert('Please enter a search query');
+                return;
+            }
+
+            document.getElementById('main-content').innerHTML = '<div class="loading">Searching Rust documentation...</div>';
+
+            try {
+                const response = await fetch('/api/search-rust-docs', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ query })
+                });
+
+                const data = await response.json();
+                const result = data.result;
+
+                const content = `
+                    <div>
+                        <h1>🔍 Rust Docs Search Results</h1>
+                        <div style="color: #666; margin-bottom: 20px;">Query: "${query}"</div>
+                        
+                        <div style="background: #f7fafc; padding: 20px; border-radius: 10px; white-space: pre-wrap; line-height: 1.6;">
+                            ${result}
+                        </div>
+                        
+                        <div style="margin-top: 20px; text-align: center;">
+                            <button class="btn" onclick="document.getElementById('docs-search').focus()">🔍 New Search</button>
+                        </div>
+                    </div>
+                `;
+                document.getElementById('main-content').innerHTML = content;
+            } catch (error) {
+                document.getElementById('main-content').innerHTML = `
+                    <div class="error">
+                        Failed to search Rust docs: ${error.message}
+                        <br><br>
+                        💡 Make sure to run <code>--setup-rust-docs</code> first to initialize the documentation RAG.
+                    </div>
+                `;
+            }
+        }
+
+        // Allow Enter key in search box
+        document.addEventListener('DOMContentLoaded', function() {
+            const searchBox = document.getElementById('docs-search');
+            if (searchBox) {
+                searchBox.addEventListener('keypress', function(e) {
+                    if (e.key === 'Enter') {
+                        searchRustDocs();
+                    }
+                });
+            }
+        });
 
         // Initialize app
         loadLessons();
