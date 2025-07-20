@@ -1,0 +1,582 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🦀 Rust Learning App</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+            color: white;
+        }
+
+        .header h1 {
+            font-size: 3rem;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .header p {
+            font-size: 1.2rem;
+            opacity: 0.9;
+        }
+
+        .main-content {
+            display: grid;
+            grid-template-columns: 1fr 2fr;
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+
+        .sidebar {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            backdrop-filter: blur(10px);
+            height: fit-content;
+        }
+
+        .content {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            backdrop-filter: blur(10px);
+            min-height: 600px;
+        }
+
+        .nav-section {
+            margin-bottom: 25px;
+        }
+
+        .nav-section h3 {
+            color: #4a5568;
+            margin-bottom: 15px;
+            font-size: 1.1rem;
+            border-bottom: 2px solid #e2e8f0;
+            padding-bottom: 8px;
+        }
+
+        .lesson-item, .quiz-item {
+            padding: 12px 15px;
+            margin: 8px 0;
+            background: #f7fafc;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border-left: 4px solid transparent;
+        }
+
+        .lesson-item:hover, .quiz-item:hover {
+            background: #e2e8f0;
+            border-left-color: #667eea;
+            transform: translateX(5px);
+        }
+
+        .lesson-item.active, .quiz-item.active {
+            background: #667eea;
+            color: white;
+            border-left-color: #4c51bf;
+        }
+
+        .difficulty {
+            font-size: 0.8rem;
+            padding: 3px 8px;
+            border-radius: 12px;
+            font-weight: bold;
+            margin-left: 8px;
+        }
+
+        .difficulty.beginner { background: #c6f6d5; color: #22543d; }
+        .difficulty.intermediate { background: #faf2e7; color: #744210; }
+        .difficulty.advanced { background: #fed7d7; color: #742a2a; }
+
+        .code-editor {
+            background: #1a202c;
+            color: #e2e8f0;
+            padding: 20px;
+            border-radius: 8px;
+            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+            font-size: 14px;
+            margin: 15px 0;
+            min-height: 200px;
+            resize: vertical;
+            border: none;
+            outline: none;
+        }
+
+        .code-output {
+            background: #000;
+            color: #00ff00;
+            padding: 15px;
+            border-radius: 8px;
+            font-family: monospace;
+            margin-top: 10px;
+            min-height: 100px;
+            white-space: pre-wrap;
+        }
+
+        .btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+            margin: 5px;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .quiz-question {
+            background: #f7fafc;
+            padding: 20px;
+            border-radius: 10px;
+            margin: 15px 0;
+        }
+
+        .quiz-option {
+            background: white;
+            padding: 12px;
+            margin: 8px 0;
+            border-radius: 6px;
+            cursor: pointer;
+            border: 2px solid #e2e8f0;
+            transition: all 0.3s ease;
+        }
+
+        .quiz-option:hover {
+            border-color: #667eea;
+        }
+
+        .quiz-option.selected {
+            border-color: #667eea;
+            background: #e6fffa;
+        }
+
+        .quiz-option.correct {
+            border-color: #38a169;
+            background: #c6f6d5;
+        }
+
+        .quiz-option.incorrect {
+            border-color: #e53e3e;
+            background: #fed7d7;
+        }
+
+        .lesson-content {
+            line-height: 1.6;
+        }
+
+        .lesson-content h1, .lesson-content h2, .lesson-content h3 {
+            color: #4a5568;
+            margin: 20px 0 10px 0;
+        }
+
+        .lesson-content code {
+            background: #e2e8f0;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: monospace;
+        }
+
+        .lesson-content pre {
+            background: #1a202c;
+            color: #e2e8f0;
+            padding: 15px;
+            border-radius: 8px;
+            overflow-x: auto;
+            margin: 15px 0;
+        }
+
+        .lesson-content pre code {
+            background: none;
+            padding: 0;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 50px;
+            color: #667eea;
+        }
+
+        .error {
+            background: #fed7d7;
+            color: #742a2a;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 15px 0;
+        }
+
+        @media (max-width: 768px) {
+            .main-content {
+                grid-template-columns: 1fr;
+            }
+            
+            .header h1 {
+                font-size: 2rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🦀 Rust Learning App</h1>
+            <p>Master Rust programming with interactive lessons and hands-on coding</p>
+        </div>
+
+        <div class="main-content">
+            <div class="sidebar">
+                <div class="nav-section">
+                    <h3>📚 Lessons</h3>
+                    <div id="lessons-list" class="loading">Loading lessons...</div>
+                </div>
+                
+                <div class="nav-section">
+                    <h3>❓ Quizzes</h3>
+                    <div id="quizzes-list" class="loading">Loading quizzes...</div>
+                </div>
+
+                <div class="nav-section">
+                    <h3>📖 Rust Docs Search</h3>
+                    <input type="text" id="docs-search" placeholder="Search Rust docs..." 
+                           style="width: 100%; padding: 8px; border: 1px solid #e2e8f0; border-radius: 4px; margin-bottom: 10px;">
+                    <button class="btn" onclick="searchRustDocs()" style="width: 100%; padding: 8px;">🔍 Search</button>
+                </div>
+            </div>
+
+            <div class="content">
+                <div id="main-content">
+                    <h2>Welcome to Rust Learning! 🎉</h2>
+                    <p>Select a lesson from the sidebar to get started with your Rust journey.</p>
+                    
+                    <div style="margin-top: 30px;">
+                        <h3>Features:</h3>
+                        <ul style="margin: 15px 0 15px 30px; line-height: 1.8;">
+                            <li>📘 Interactive lessons from beginner to advanced</li>
+                            <li>💻 Live code execution and testing</li>
+                            <li>❓ Quizzes to test your understanding</li>
+                            <li>🤖 AI-powered explanations and feedback</li>
+                            <li>🔒 Safe code execution environment</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // App state
+        let currentLesson = null;
+        let currentQuiz = null;
+        let lessons = [];
+        let quizzes = [];
+
+        // Load initial data
+        async function loadLessons() {
+            try {
+                const response = await fetch('/api/lessons');
+                const data = await response.json();
+                lessons = data.data;
+                renderLessonsList();
+            } catch (error) {
+                document.getElementById('lessons-list').innerHTML = '<div class="error">Failed to load lessons</div>';
+            }
+        }
+
+        async function loadQuizzes() {
+            try {
+                const response = await fetch('/api/quizzes');
+                const data = await response.json();
+                quizzes = data.data;
+                renderQuizzesList();
+            } catch (error) {
+                document.getElementById('quizzes-list').innerHTML = '<div class="error">Failed to load quizzes</div>';
+            }
+        }
+
+        function renderLessonsList() {
+            const container = document.getElementById('lessons-list');
+            container.innerHTML = lessons.map(lesson => `
+                <div class="lesson-item" onclick="loadLesson('${lesson.id}')">
+                    <div style="font-weight: bold;">${lesson.title}</div>
+                    <div style="font-size: 0.9rem; color: #666; margin-top: 4px;">
+                        ${lesson.description}
+                        <span class="difficulty ${lesson.difficulty.toLowerCase()}">${lesson.difficulty}</span>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function renderQuizzesList() {
+            const container = document.getElementById('quizzes-list');
+            container.innerHTML = quizzes.map(quiz => `
+                <div class="quiz-item" onclick="loadQuiz('${quiz.id}')">
+                    <div style="font-weight: bold;">${quiz.title}</div>
+                    <div style="font-size: 0.9rem; color: #666; margin-top: 4px;">${quiz.description}</div>
+                </div>
+            `).join('');
+        }
+
+        async function loadLesson(lessonId) {
+            try {
+                document.getElementById('main-content').innerHTML = '<div class="loading">Loading lesson...</div>';
+                
+                const response = await fetch(`/api/lesson/${lessonId}`);
+                const data = await response.json();
+                currentLesson = data.lesson;
+                
+                // Highlight active lesson
+                document.querySelectorAll('.lesson-item').forEach(item => item.classList.remove('active'));
+                event.target.closest('.lesson-item').classList.add('active');
+                
+                renderLesson(data.lesson, data.html);
+            } catch (error) {
+                document.getElementById('main-content').innerHTML = '<div class="error">Failed to load lesson</div>';
+            }
+        }
+
+        function renderLesson(lesson, html) {
+            const content = `
+                <div class="lesson-content">
+                    <h1>${lesson.title}</h1>
+                    <div style="color: #666; margin-bottom: 20px;">${lesson.description}</div>
+                    ${html}
+                    
+                    ${lesson.code_examples.map((example, index) => `
+                        <div style="margin: 30px 0;">
+                            <h3>💻 ${example.title}</h3>
+                            <p style="margin-bottom: 10px;">${example.explanation}</p>
+                            <textarea class="code-editor" id="code-${index}">${example.code}</textarea>
+                            ${example.runnable ? `
+                                <button class="btn" onclick="runCode(${index})">▶️ Run Code</button>
+                                <div id="output-${index}" class="code-output" style="display: none;"></div>
+                            ` : ''}
+                        </div>
+                    `).join('')}
+                    
+                    <div style="margin-top: 40px; text-align: center;">
+                        ${lesson.prev_lesson ? `<button class="btn" onclick="loadLesson('${lesson.prev_lesson}')">← Previous</button>` : ''}
+                        ${lesson.next_lesson ? `<button class="btn" onclick="loadLesson('${lesson.next_lesson}')">Next →</button>` : ''}
+                    </div>
+                </div>
+            `;
+            document.getElementById('main-content').innerHTML = content;
+        }
+
+        async function runCode(exampleIndex) {
+            const codeElement = document.getElementById(`code-${exampleIndex}`);
+            const outputElement = document.getElementById(`output-${exampleIndex}`);
+            const code = codeElement.value;
+            
+            outputElement.style.display = 'block';
+            outputElement.textContent = 'Running code...';
+            
+            try {
+                const response = await fetch('/api/execute', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ code })
+                });
+                
+                const data = await response.json();
+                const result = data.result;
+                
+                let output = '';
+                if (result.stdout) output += `Output:\n${result.stdout}\n`;
+                if (result.stderr) output += `Error:\n${result.stderr}\n`;
+                if (result.exit_code !== 0) output += `Exit code: ${result.exit_code}\n`;
+                if (!output) output = 'Code executed successfully (no output)';
+                
+                outputElement.textContent = output;
+            } catch (error) {
+                outputElement.textContent = `Error: ${error.message}`;
+            }
+        }
+
+        async function loadQuiz(quizId) {
+            try {
+                document.getElementById('main-content').innerHTML = '<div class="loading">Loading quiz...</div>';
+                
+                const response = await fetch(`/api/quiz/${quizId}`);
+                const data = await response.json();
+                currentQuiz = data.quiz;
+                
+                // Highlight active quiz
+                document.querySelectorAll('.quiz-item').forEach(item => item.classList.remove('active'));
+                event.target.closest('.quiz-item').classList.add('active');
+                
+                renderQuiz(data.quiz);
+            } catch (error) {
+                document.getElementById('main-content').innerHTML = '<div class="error">Failed to load quiz</div>';
+            }
+        }
+
+        function renderQuiz(quiz) {
+            const content = `
+                <div>
+                    <h1>${quiz.title}</h1>
+                    <div style="color: #666; margin-bottom: 30px;">${quiz.description}</div>
+                    
+                    ${quiz.questions.map((question, qIndex) => `
+                        <div class="quiz-question">
+                            <h3>${question.title}</h3>
+                            <p style="margin-bottom: 15px;">${question.content}</p>
+                            
+                            ${question.question_type.type === 'MultipleChoice' ? `
+                                ${question.question_type.options.map((option, oIndex) => `
+                                    <div class="quiz-option" onclick="selectOption(${qIndex}, ${oIndex})">
+                                        ${String.fromCharCode(65 + oIndex)}. ${option}
+                                    </div>
+                                `).join('')}
+                            ` : ''}
+                            
+                            ${question.hint ? `<p style="margin-top: 10px; font-style: italic; color: #666;">💡 Hint: ${question.hint}</p>` : ''}
+                        </div>
+                    `).join('')}
+                    
+                    <div style="text-align: center; margin-top: 30px;">
+                        <button class="btn" onclick="submitQuiz()">Submit Quiz</button>
+                    </div>
+                </div>
+            `;
+            document.getElementById('main-content').innerHTML = content;
+        }
+
+        function selectOption(questionIndex, optionIndex) {
+            const question = currentQuiz.questions[questionIndex];
+            const options = document.querySelectorAll(`.quiz-question:nth-child(${questionIndex + 2}) .quiz-option`);
+            
+            options.forEach(option => option.classList.remove('selected'));
+            options[optionIndex].classList.add('selected');
+            
+            // Store selection
+            if (!window.quizAnswers) window.quizAnswers = {};
+            window.quizAnswers[questionIndex] = optionIndex;
+        }
+
+        function submitQuiz() {
+            if (!window.quizAnswers) {
+                alert('Please answer at least one question');
+                return;
+            }
+            
+            let score = 0;
+            const total = currentQuiz.questions.length;
+            
+            currentQuiz.questions.forEach((question, qIndex) => {
+                const userAnswer = window.quizAnswers[qIndex];
+                const correct = question.question_type.correct_answer;
+                const options = document.querySelectorAll(`.quiz-question:nth-child(${qIndex + 2}) .quiz-option`);
+                
+                if (userAnswer === correct) {
+                    score++;
+                    options[userAnswer].classList.add('correct');
+                } else {
+                    if (userAnswer !== undefined) {
+                        options[userAnswer].classList.add('incorrect');
+                    }
+                    options[correct].classList.add('correct');
+                }
+            });
+            
+            const percentage = Math.round((score / total) * 100);
+            alert(`Quiz completed! Score: ${score}/${total} (${percentage}%)`);
+        }
+
+        async function searchRustDocs() {
+            const query = document.getElementById('docs-search').value.trim();
+            if (!query) {
+                alert('Please enter a search query');
+                return;
+            }
+
+            document.getElementById('main-content').innerHTML = '<div class="loading">Searching Rust documentation...</div>';
+
+            try {
+                const response = await fetch('/api/search-rust-docs', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ query })
+                });
+
+                const data = await response.json();
+                const result = data.result;
+
+                const content = `
+                    <div>
+                        <h1>🔍 Rust Docs Search Results</h1>
+                        <div style="color: #666; margin-bottom: 20px;">Query: "${query}"</div>
+                        
+                        <div style="background: #f7fafc; padding: 20px; border-radius: 10px; white-space: pre-wrap; line-height: 1.6;">
+                            ${result}
+                        </div>
+                        
+                        <div style="margin-top: 20px; text-align: center;">
+                            <button class="btn" onclick="document.getElementById('docs-search').focus()">🔍 New Search</button>
+                        </div>
+                    </div>
+                `;
+                document.getElementById('main-content').innerHTML = content;
+            } catch (error) {
+                document.getElementById('main-content').innerHTML = `
+                    <div class="error">
+                        Failed to search Rust docs: ${error.message}
+                        <br><br>
+                        💡 Make sure to run <code>--setup-rust-docs</code> first to initialize the documentation RAG.
+                    </div>
+                `;
+            }
+        }
+
+        // Allow Enter key in search box
+        document.addEventListener('DOMContentLoaded', function() {
+            const searchBox = document.getElementById('docs-search');
+            if (searchBox) {
+                searchBox.addEventListener('keypress', function(e) {
+                    if (e.key === 'Enter') {
+                        searchRustDocs();
+                    }
+                });
+            }
+        });
+
+        // Initialize app
+        loadLessons();
+        loadQuizzes();
+    </script>
+</body>
+</html>
