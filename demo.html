@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🦀 Rust Learning App - Demo</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+            color: white;
+        }
+
+        .header h1 {
+            font-size: 3rem;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .header p {
+            font-size: 1.2rem;
+            opacity: 0.9;
+        }
+
+        .main-content {
+            display: grid;
+            grid-template-columns: 1fr 2fr;
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+
+        .sidebar {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            backdrop-filter: blur(10px);
+            height: fit-content;
+        }
+
+        .content {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            backdrop-filter: blur(10px);
+            min-height: 600px;
+        }
+
+        .nav-section {
+            margin-bottom: 25px;
+        }
+
+        .nav-section h3 {
+            color: #4a5568;
+            margin-bottom: 15px;
+            font-size: 1.1rem;
+            border-bottom: 2px solid #e2e8f0;
+            padding-bottom: 8px;
+        }
+
+        .lesson-item, .quiz-item {
+            padding: 12px 15px;
+            margin: 8px 0;
+            background: #f7fafc;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border-left: 4px solid transparent;
+        }
+
+        .lesson-item:hover, .quiz-item:hover {
+            background: #e2e8f0;
+            border-left-color: #667eea;
+            transform: translateX(5px);
+        }
+
+        .lesson-item.active {
+            background: #667eea;
+            color: white;
+            border-left-color: #4c51bf;
+        }
+
+        .difficulty {
+            font-size: 0.8rem;
+            padding: 3px 8px;
+            border-radius: 12px;
+            font-weight: bold;
+            margin-left: 8px;
+        }
+
+        .difficulty.beginner { background: #c6f6d5; color: #22543d; }
+        .difficulty.intermediate { background: #faf2e7; color: #744210; }
+
+        .code-editor {
+            background: #1a202c;
+            color: #e2e8f0;
+            padding: 20px;
+            border-radius: 8px;
+            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+            font-size: 14px;
+            margin: 15px 0;
+            min-height: 150px;
+            border: none;
+            width: 100%;
+        }
+
+        .btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+            margin: 5px;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .lesson-content h1 {
+            color: #4a5568;
+            margin-bottom: 20px;
+        }
+
+        .lesson-content h2, .lesson-content h3 {
+            color: #4a5568;
+            margin: 20px 0 10px 0;
+        }
+
+        .lesson-content pre {
+            background: #1a202c;
+            color: #e2e8f0;
+            padding: 15px;
+            border-radius: 8px;
+            overflow-x: auto;
+            margin: 15px 0;
+        }
+
+        input[type="text"] {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #e2e8f0;
+            border-radius: 4px;
+            margin-bottom: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🦀 Rust Learning App</h1>
+            <p>Master Rust programming with interactive lessons and hands-on coding</p>
+        </div>
+
+        <div class="main-content">
+            <div class="sidebar">
+                <div class="nav-section">
+                    <h3>📚 Lessons</h3>
+                    <div class="lesson-item active">
+                        <div style="font-weight: bold;">Introduction to Rust</div>
+                        <div style="font-size: 0.9rem; color: #666; margin-top: 4px;">
+                            Learn the basics of the Rust programming language
+                            <span class="difficulty beginner">Beginner</span>
+                        </div>
+                    </div>
+                    <div class="lesson-item">
+                        <div style="font-weight: bold;">Variables and Mutability</div>
+                        <div style="font-size: 0.9rem; color: #666; margin-top: 4px;">
+                            Learn about variables, mutability, and data types
+                            <span class="difficulty beginner">Beginner</span>
+                        </div>
+                    </div>
+                    <div class="lesson-item">
+                        <div style="font-weight: bold;">Ownership System</div>
+                        <div style="font-size: 0.9rem; color: #666; margin-top: 4px;">
+                            Understanding Rust's ownership and borrowing
+                            <span class="difficulty intermediate">Intermediate</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="nav-section">
+                    <h3>❓ Quizzes</h3>
+                    <div class="quiz-item">
+                        <div style="font-weight: bold;">Introduction Quiz</div>
+                        <div style="font-size: 0.9rem; color: #666; margin-top: 4px;">Test your understanding of basic Rust concepts</div>
+                    </div>
+                </div>
+
+                <div class="nav-section">
+                    <h3>📖 Rust Docs Search</h3>
+                    <input type="text" placeholder="Search Rust docs..." value="ownership">
+                    <button class="btn" style="width: 100%; padding: 8px;">🔍 Search</button>
+                </div>
+            </div>
+
+            <div class="content">
+                <div class="lesson-content">
+                    <h1>Introduction to Rust</h1>
+                    <div style="color: #666; margin-bottom: 20px;">Learn the basics of the Rust programming language</div>
+                    
+                    <h2>What makes Rust special?</h2>
+                    <ul style="margin: 15px 0 15px 30px; line-height: 1.8;">
+                        <li><strong>Memory Safety</strong>: Rust prevents common programming errors like null pointer dereferences and buffer overflows</li>
+                        <li><strong>Zero-cost abstractions</strong>: High-level features don't sacrifice performance</li>
+                        <li><strong>Fearless concurrency</strong>: Safe and efficient concurrent programming</li>
+                    </ul>
+
+                    <h2>Your first Rust program</h2>
+                    <p>Let's start with the classic "Hello, World!" program:</p>
+
+                    <pre><code>fn main() {
+    println!("Hello, World!");
+}</code></pre>
+
+                    <div style="margin: 30px 0;">
+                        <h3>💻 Hello World</h3>
+                        <p style="margin-bottom: 10px;">This is the simplest Rust program. It prints 'Hello, World!' to the console.</p>
+                        <textarea class="code-editor">fn main() {
+    println!("Hello, World!");
+}</textarea>
+                        <button class="btn">▶️ Run Code</button>
+                        
+                        <div style="background: #000; color: #00ff00; padding: 15px; border-radius: 8px; font-family: monospace; margin-top: 10px;">
+Output:
+Hello, World!
+
+Exit code: 0
+Execution time: 127ms
+                        </div>
+                    </div>
+                    
+                    <div style="margin-top: 40px; text-align: center;">
+                        <button class="btn">Next: Variables and Mutability →</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
